@@ -1,8 +1,10 @@
 import os
+from pathlib import Path
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 
-VECTORSTORE_PATH = "vectorstore"
+# 스크립트 위치 기준 절대경로 — uvicorn 실행 위치와 무관하게 동작
+VECTORSTORE_PATH = str(Path(__file__).parent / "vectorstore")
 
 class GeminiEmbeddings(GoogleGenerativeAIEmbeddings):
     """embed_query를 embed_documents로 우회해 gemini-embedding-001 호환성 확보."""

@@ -12,8 +12,8 @@ wheels/
 # Environment variables
 .env
 
-# Vector store (generated)
-vectorstore/
+# Vector store (generated) — git에 포함 (배포 필수, 2.4MB)
+# vectorstore/
 
 # Data files
 *.pdf
