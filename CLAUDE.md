@@ -2,6 +2,10 @@
 
 Claude Code 전용 가이드 — **오월의 증언** (5.18 민주화운동 체험형 AI 챗봇)
 
+## 협업 규칙
+
+- PR이 필요한 상황이 생기면 항상 PR 제목 추천을 함께 제공할 것.
+
 GitHub: https://github.com/whi02/May-18th-Democratic-Uprising-Hackathon  
 마감: 2026-05-12 (배포 포함)  
 담당자: 휘영 (전체 단독 개발), 민기 (AI 모듈 원작성)

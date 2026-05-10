@@ -202,6 +202,53 @@ payload = f"[{header}]\n{char_note}{user_message}"
 
 ---
 
+## 배포 결정 사항 (2026-05-11)
+
+### DEPLOY-01: SQLite 전환
+
+**결정:** MySQL → SQLite로 전환
+
+**이유:** Railway 무료 플랜에서 MySQL은 별도 서비스 필요. 해커톤 특성상 SQLite로 충분.
+
+**수정 파일:**
+- `backend/models/db.py` — `check_same_thread: False` 추가, `pool_pre_ping` 제거, DB_URL 기본값 설정
+- `backend/requirements.txt` — `pymysql` 제거
+- `backend/main.py` — ALTER TABLE 타입 `INT` → `INTEGER`
+- `.env` — `DB_URL=sqlite:///./518db.sqlite`
+
+---
+
+### DEPLOY-02: Railway 백엔드 배포
+
+**플랫폼:** Railway (무료 플랜, 월 $5 크레딧)
+
+**배포 URL:** `https://may-18th-democratic-uprising-hackathon-production.up.railway.app`
+
+**설정:**
+- Branch: `main`
+- Start Command: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+- 환경변수: `GOOGLE_API_KEY`, `DB_URL=sqlite:///./518db.sqlite`
+
+**트러블슈팅:**
+- Railpack이 Python 프로젝트 감지 실패 → 루트에 `requirements.txt`, `Procfile` 추가로 해결
+- `requirements.txt`가 `backend/` 안에만 있었던 것이 원인
+
+---
+
+### DEPLOY-03: GitHub Pages 프론트엔드 배포
+
+**플랫폼:** GitHub Pages (완전 무료)
+
+**배포 URL:** `https://whi02.github.io/May-18th-Democratic-Uprising-Hackathon`
+
+**설정:** Branch: `main`, Folder: `/ (root)`
+
+**수정 사항:**
+- `frontend/index.html`의 `API_BASE` → Railway URL로 변경
+- `index.html`을 루트에 복사 (GitHub Pages는 root 또는 /docs만 지원)
+
+---
+
 ## AI 모듈 (민기) 섹션
 
 ### 구조 변경 이력 (2026-05-10, feat/ai-module 통합)
