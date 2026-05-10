@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>오월의 증언 — 1980, 광주</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary:   '#1C3F6E',
+            'primary-light': '#EBF0F9',
+            accent:    '#C0392B',
+            surface:   '#FFFFFF',
+            bg:        '#F4F6FA',
+            'text-primary':   '#111827',
+            'text-secondary': '#6B7280',
+            border:    '#E5E7EB',
+          },
+          fontFamily: { sans: ['Noto Sans KR', 'sans-serif'] },
+          boxShadow: {
+            card: '0 2px 12px rgba(0,0,0,0.07)',
+            modal: '0 8px 40px rgba(0,0,0,0.16)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #F4F6FA; color: #111827; font-family: 'Noto Sans KR', sans-serif; -webkit-font-smoothing: antialiased; }
+
+    .screen { display: none; flex-direction: column; height: 100vh; }
+    .screen.active { display: flex; }
+
+    /* 채팅 말풍선 */
+    .bubble-user {
+      align-self: flex-end;
+      background: #1C3F6E;
+      color: #fff;
+      border-radius: 20px 20px 4px 20px;
+      max-width: 74%;
+      padding: 11px 16px;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+    .bubble-assistant {
+      align-self: flex-start;
+      background: #FFFFFF;
+      color: #111827;
+      border: 1px solid #E5E7EB;
+      border-radius: 4px 20px 20px 20px;
+      max-width: 85%;
+      padding: 11px 16px;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .bubble-system {
+      align-self: center;
+      color: #9CA3AF;
+      font-size: 0.75rem;
+      padding: 4px 14px;
+      background: #F3F4F6;
+      border-radius: 20px;
+    }
+
+    /* 타이핑 인디케이터 */
+    .typing-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #9CA3AF; display: inline-block;
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-5px); }
+    }
+
+    /* 스크롤바 */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 2px; }
+
+    .toss-input {
+      width: 100%;
+      background: #F9FAFB;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-size: 0.9rem;
+      color: #111827;
+      font-family: 'Noto Sans KR', sans-serif;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      outline: none;
+    }
+    .toss-input::placeholder { color: #9CA3AF; }
+    .toss-input:focus {
+      border-color: #1C3F6E;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(28,63,110,0.08);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 15px;
+      background: #1C3F6E;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .btn-primary:hover { background: #163258; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { background: #D1D5DB; color: #9CA3AF; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      padding: 13px;
+      background: #fff;
+      color: #374151;
+      font-weight: 500;
+      font-size: 0.88rem;
+      border-radius: 12px;
+      border: 1.5px solid #E5E7EB;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .btn-secondary:hover { background: #F9FAFB; }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      border: 1px solid #F3F4F6;
+    }
+
+    .ending-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      background: #EBF0F9;
+      color: #1C3F6E;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* 날짜 진행 바 */
+    #date-progress-bar { transition: width 0.6s ease; }
+
+    /* 생존 확률 바 */
+    #survival-bar { transition: width 0.7s ease, background 0.5s ease; }
+    @keyframes pulse-danger {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    .survival-danger { animation: pulse-danger 1.4s ease-in-out infinite; }
+
+    /* 역사 카드 */
+    .history-card {
+      align-self: center;
+      background: linear-gradient(135deg, #1C3F6E 0%, #163258 100%);
+      color: #fff;
+      border-radius: 12px;
+      padding: 12px 16px;
+      max-width: 90%;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      box-shadow: 0 4px 16px rgba(28,63,110,0.18);
+    }
+
+    /* 지도 */
+    .map-pin { cursor: default; transition: opacity 0.15s; }
+    .map-pin:hover { opacity: 0.85; }
+    #map-tooltip { pointer-events: none; transition: opacity 0.12s; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== 공통 상단 상태바 ===== -->
+  <header id="status-bar" class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 py-3 bg-white border-b border-border" style="box-shadow: 0 1px 8px rgba(0,0,0,0.06);">
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-accent"></div>
+      <span class="text-sm font-bold tracking-tight text-text-primary" style="letter-spacing: -0.01em;">오월의 증언</span>
+    </div>
+    <span id="status-date" class="text-xs font-medium text-text-secondary bg-bg px-3 py-1 rounded-full">1980년 5월 18일</span>
+  </header>
+
+  <!-- ============================================================ -->
+  <!-- ① 시작화면                                                    -->
+  <!-- ============================================================ -->
+  <div id="screen-intro" class="screen active items-center justify-center px-6 pt-14" style="background: #F4F6FA;">
+    <div class="flex flex-col items-center gap-7 w-full max-w-xs">
+
+      <div class="card w-full px-7 py-8 flex flex-col items-center gap-5 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9,22 9,12 15,12 15,22"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-text-secondary mb-1 tracking-widest uppercase">Interactive Historical Archive</p>
+          <h1 class="text-3xl font-bold text-text-primary mb-2" style="letter-spacing: -0.03em;">오월의 증언</h1>
+          <p class="text-sm font-medium mb-3" style="color:#C0392B;">1980년 5월 18일 — 27일, 광주</p>
+          <p class="text-sm text-text-secondary leading-relaxed">
+            당신은 1980년 5월의 광주에 있습니다.<br/>
+            역사는 당신이 어떻게 하든 멈추지 않습니다.<br/>
+            그 열흘을 살아내세요.
+          </p>
+        </div>
+      </div>
+
+      <button onclick="showScreen('profile')" class="btn-primary">
+        광주로 들어가기
+      </button>
+
+      <div id="unlocked-section" class="hidden w-full">
+        <p class="text-xs text-text-secondary mb-2 text-center">해금된 엔딩</p>
+        <ul id="unlocked-list" class="flex flex-wrap gap-2 justify-center"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ② 신분 설정 화면                                              -->
+  <!-- ============================================================ -->
+  <div id="screen-profile" class="screen items-center justify-center px-6 pt-14" style="background: #F4F6FA;">
+    <div class="w-full max-w-xs flex flex-col gap-5">
+
+      <div>
+        <h2 class="text-xl font-bold text-text-primary mb-1" style="letter-spacing:-0.02em;">신분을 설정하세요</h2>
+        <p class="text-sm text-text-secondary">1980년 5월 광주로 들어가기 전, 당신이 누구인지 알려주세요.</p>
+      </div>
+
+      <div class="card p-5 flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-text-secondary">이름</label>
+          <input id="input-name" type="text" placeholder="홍길동" class="toss-input" />
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-text-secondary">나이</label>
+          <input id="input-age" type="number" placeholder="25" min="10" max="90" class="toss-input" />
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-text-secondary">직업 / 신분</label>
+          <input id="input-job" type="text" placeholder="학생 / 시민 / 기자 / 교사 …" class="toss-input" />
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-text-secondary">배경 (선택)</label>
+          <input id="input-background" type="text" placeholder="광주에서 태어나 전남대에 다니고 있다." class="toss-input" />
+        </div>
+        <p id="profile-error" class="hidden text-xs font-medium" style="color:#C0392B;">이름, 나이, 직업을 입력해주세요.</p>
+      </div>
+
+      <button id="btn-enter" onclick="handleProfileSubmit()" class="btn-primary">1980년 5월로 들어가기</button>
+      <button onclick="showScreen('intro')" class="btn-secondary w-full text-center">← 돌아가기</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ③ 지도 화면 (학습용 — 클릭 불가)                              -->
+  <!-- ============================================================ -->
+  <div id="screen-map" class="screen flex-col pt-14" style="background:#F4F6FA;">
+    <div class="px-5 py-2.5 bg-white border-b border-border flex items-center justify-between">
+      <p class="text-xs text-text-secondary">📍 마커에 마우스를 올리면 역사 설명을 볼 수 있습니다.</p>
+      <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:#FEF3C7;color:#92400E;">학습용 지도</span>
+    </div>
+
+    <div class="flex-1 relative overflow-hidden flex items-center justify-center" style="background:#EEF1F7;">
+      <svg id="gwangju-map" viewBox="0 0 500 500" class="w-full" style="max-height: calc(100vh - 160px);">
+        <rect width="500" height="500" fill="#E8EDF5"/>
+
+        <!-- 동구 -->
+        <path d="M 355.6,317.0 L 361.8,313.5 L 381.6,316.2 L 407.3,345.0 L 438.5,328.2 L 442.3,338.4 L 442.7,343.8 L 430.2,381.9 L 387.9,427.1 L 349.1,387.6 L 340.6,336.0 L 355.6,317.0 Z M 361.6,306.1 L 381.6,316.2 L 361.8,313.5 L 359.0,306.8 L 361.6,306.1 Z M 367.5,274.3 L 390.9,279.3 L 425.4,291.0 L 438.5,328.2 L 407.3,345.0 L 381.6,316.2 L 361.6,306.1 L 363.2,290.4 L 367.5,274.3 Z M 350.7,289.1 L 347.0,281.3 L 363.2,290.4 L 361.6,306.1 L 359.0,306.8 L 352.5,293.7 L 350.7,289.1 Z M 355.2,266.7 L 358.9,271.3 L 363.4,270.9 L 367.5,274.3 L 363.2,290.4 L 347.0,281.3 L 345.2,277.8 L 342.6,274.1 L 355.2,266.7 Z M 379.4,250.0 L 390.9,279.3 L 367.5,274.3 L 363.4,270.9 L 369.3,257.5 L 379.4,250.0 Z M 369.3,257.5 L 363.4,270.9 L 358.9,271.3 L 357.3,257.1 L 365.6,255.8 L 369.3,257.5 Z M 368.0,237.6 L 378.0,243.6 L 379.4,250.0 L 369.3,257.5 L 365.6,255.8 L 363.7,240.2 L 368.0,237.6 Z M 363.7,240.2 L 365.6,255.8 L 357.3,257.1 L 352.1,251.3 L 362.1,238.8 L 363.7,240.2 Z M 349.6,231.0 L 362.1,238.8 L 352.1,251.3 L 350.8,252.5 L 349.6,231.3 L 349.6,231.0 Z M 349.6,231.3 L 350.8,252.5 L 349.1,255.7 L 341.8,247.5 L 341.7,247.5 L 345.6,229.4 L 349.6,231.3 Z M 350.8,252.5 L 352.1,251.3 L 357.3,257.1 L 358.9,271.3 L 355.2,266.7 L 349.1,255.7 L 350.8,252.5 Z M 341.8,247.5 L 349.1,255.7 L 355.2,266.7 L 342.6,274.1 L 338.1,264.9 L 334.9,259.5 L 341.8,247.5 Z" fill="#FDDDD6" stroke="#F5BDB0" stroke-width="1.2"/>
+        <text x="413" y="233" fill="#666" font-size="11" font-weight="600" text-anchor="middle" font-family="Noto Sans KR" pointer-events="none">동구</text>
+
+        <!-- 서구 -->
+        <path d="M 290.8,216.3 L 297.3,217.0 L 297.3,220.0 L 292.5,224.8 L 258.1,206.7 L 290.8,216.3 Z M 284.9,299.8 L 278.4,325.3 L 264.1,305.6 L 284.9,299.8 Z M 282.8,278.1 L 291.8,296.8 L 284.9,299.8 L 264.1,305.6 L 271.7,283.6 L 282.8,278.1 Z M 306.7,289.2 L 312.0,303.2 L 312.4,323.2 L 311.6,333.2 L 284.6,349.5 L 278.4,325.3 L 284.9,299.8 L 291.8,296.8 L 302.1,291.5 L 303.2,287.9 L 306.7,289.2 Z M 273.7,262.7 L 267.1,268.0 L 245.5,264.2 L 273.8,240.5 L 273.7,262.7 Z M 245.5,264.2 L 267.1,268.0 L 271.7,283.6 L 264.1,305.6 L 278.4,325.3 L 284.6,349.5 L 272.0,355.3 L 210.7,385.6 L 207.6,370.9 L 210.9,346.4 L 238.8,279.0 L 241.2,261.2 L 245.5,264.2 Z M 293.0,269.2 L 302.1,291.5 L 291.8,296.8 L 282.8,278.1 L 293.0,269.2 Z M 298.6,258.9 L 303.2,287.9 L 302.1,291.5 L 293.0,269.2 L 292.7,259.1 L 298.6,258.9 Z M 303.8,256.9 L 310.2,268.8 L 311.8,279.8 L 306.7,289.2 L 303.2,287.9 L 298.6,258.9 L 303.8,256.9 Z M 306.0,242.7 L 305.9,256.2 L 303.8,256.9 L 298.6,258.9 L 292.7,259.1 L 289.9,258.9 L 290.1,246.1 L 298.8,242.3 L 306.0,242.7 Z M 289.9,258.9 L 292.7,259.1 L 293.0,269.2 L 282.8,278.1 L 271.7,283.6 L 267.1,268.0 L 273.7,262.7 L 289.9,258.9 Z M 290.1,246.1 L 289.9,258.9 L 273.7,262.7 L 273.8,240.5 L 290.1,246.1 Z M 253.3,202.1 L 258.1,206.7 L 292.5,224.8 L 298.8,242.3 L 290.1,246.1 L 273.8,240.5 L 245.5,264.2 L 241.2,261.2 L 235.2,238.0 L 252.6,204.4 L 253.3,202.1 Z M 297.3,220.0 L 307.5,222.7 L 311.2,238.7 L 306.0,242.7 L 298.8,242.3 L 292.5,224.8 L 297.3,220.0 Z M 303.8,256.9 L 305.9,256.2 L 319.5,259.8 L 319.8,260.7 L 310.2,268.8 L 303.8,256.9 Z M 311.2,238.7 L 314.9,240.1 L 321.4,253.3 L 322.0,258.0 L 319.5,259.8 L 305.9,256.2 L 306.0,242.7 L 311.2,238.7 Z M 314.9,240.1 L 326.3,248.4 L 321.4,253.3 L 314.9,240.1 Z M 326.3,248.4 L 327.9,250.9 L 334.9,259.5 L 338.1,264.9 L 332.8,266.4 L 322.0,258.0 L 321.4,253.3 L 326.3,248.4 Z" fill="#D6E4FF" stroke="#B0C8F0" stroke-width="1.2"/>
+        <text x="274" y="224" fill="#666" font-size="11" font-weight="600" text-anchor="middle" font-family="Noto Sans KR" pointer-events="none">서구</text>
+
+        <!-- 남구 -->
+        <path d="M 309.6,381.2 L 325.4,409.9 L 316.7,416.2 L 273.5,416.2 L 229.9,470.0 L 181.3,469.6 L 156.0,456.1 L 172.5,433.7 L 210.7,385.6 L 272.0,355.3 L 309.6,381.2 Z M 346.2,311.3 L 355.6,317.0 L 340.6,336.0 L 330.7,317.7 L 333.4,314.1 L 346.2,311.3 Z M 339.3,296.3 L 343.3,305.1 L 346.2,311.3 L 333.4,314.1 L 328.0,297.9 L 339.3,296.3 Z M 284.6,349.5 L 311.6,333.2 L 309.6,381.2 L 272.0,355.3 L 284.6,349.5 Z M 330.7,317.7 L 340.6,336.0 L 349.1,387.6 L 325.4,409.9 L 309.6,381.2 L 311.6,333.2 L 312.4,323.2 L 330.7,317.7 Z M 313.2,281.9 L 322.7,290.4 L 325.1,295.0 L 312.0,303.2 L 306.7,289.2 L 311.8,279.8 L 313.2,281.9 Z M 328.0,297.9 L 333.4,314.1 L 330.7,317.7 L 312.4,323.2 L 312.0,303.2 L 325.1,295.0 L 328.0,297.9 Z M 328.7,283.8 L 337.6,293.3 L 340.0,296.2 L 339.3,296.3 L 328.0,297.9 L 325.1,295.0 L 322.7,290.4 L 324.9,286.4 L 328.7,283.8 Z M 337.6,284.5 L 337.6,293.3 L 328.7,283.8 L 330.2,275.7 L 337.6,284.5 Z M 322.4,274.9 L 324.9,286.4 L 322.7,290.4 L 313.2,281.9 L 322.4,274.9 Z M 310.2,268.8 L 319.8,260.7 L 322.4,274.9 L 313.2,281.9 L 311.8,279.8 L 310.2,268.8 Z M 319.5,259.8 L 322.0,258.0 L 332.8,266.4 L 330.2,275.7 L 328.7,283.8 L 324.9,286.4 L 322.4,274.9 L 319.8,260.7 L 319.5,259.8 Z M 332.8,266.4 L 338.1,264.9 L 342.6,274.1 L 345.2,277.8 L 337.6,284.5 L 330.2,275.7 L 332.8,266.4 Z M 352.5,293.7 L 359.0,306.8 L 361.8,313.5 L 355.6,317.0 L 346.2,311.3 L 343.3,305.1 L 352.5,293.7 Z M 352.5,293.7 L 343.3,305.1 L 339.3,296.3 L 340.0,296.2 L 350.7,289.1 L 352.5,293.7 Z M 347.0,281.3 L 350.7,289.1 L 340.0,296.2 L 337.6,293.3 L 337.6,284.5 L 345.2,277.8 L 347.0,281.3 Z" fill="#D1FAE5" stroke="#99D6B5" stroke-width="1.2"/>
+        <text x="315" y="355" fill="#666" font-size="11" font-weight="600" text-anchor="middle" font-family="Noto Sans KR" pointer-events="none">남구</text>
+
+        <!-- 북구 -->
+        <path d="M 311.8,133.6 L 315.3,146.4 L 318.2,158.2 L 301.8,176.0 L 295.4,177.1 L 278.2,171.8 L 270.0,161.7 L 272.1,142.3 L 311.8,133.6 Z M 301.9,45.7 L 337.5,30.1 L 365.0,67.1 L 366.3,70.4 L 341.8,118.0 L 311.8,133.6 L 272.1,142.3 L 270.1,118.0 L 250.6,93.7 L 260.0,82.3 L 301.9,45.7 Z M 342.8,123.6 L 315.3,146.4 L 311.8,133.6 L 341.8,118.0 L 342.8,123.6 Z M 341.8,118.0 L 366.3,70.4 L 403.9,154.9 L 405.0,189.7 L 447.3,181.7 L 470.0,225.7 L 457.7,297.3 L 442.3,338.4 L 438.5,328.2 L 425.4,291.0 L 390.9,279.3 L 379.4,250.0 L 378.0,243.6 L 381.7,225.8 L 385.3,215.1 L 376.5,170.6 L 359.3,159.7 L 342.8,123.6 L 341.8,118.0 Z M 295.4,177.1 L 287.1,199.3 L 290.8,216.3 L 258.1,206.7 L 253.3,202.1 L 255.7,195.1 L 278.2,171.8 L 295.4,177.1 Z M 301.8,176.0 L 307.4,190.1 L 301.5,205.8 L 287.1,199.3 L 295.4,177.1 L 301.8,176.0 Z M 311.1,189.2 L 315.8,209.8 L 315.8,222.4 L 307.5,222.7 L 297.3,220.0 L 297.3,217.0 L 301.5,205.8 L 307.4,190.1 L 311.1,189.2 Z M 287.1,199.3 L 301.5,205.8 L 297.3,217.0 L 290.8,216.3 L 287.1,199.3 Z" fill="#FEF3C7" stroke="#F0D080" stroke-width="1.2"/>
+        <text x="380" y="173" fill="#666" font-size="11" font-weight="600" text-anchor="middle" font-family="Noto Sans KR" pointer-events="none">북구</text>
+
+        <!-- 광산구 -->
+        <path d="M 248.3,161.0 L 245.7,175.9 L 233.6,200.1 L 221.4,198.6 L 216.9,198.3 L 229.4,150.8 L 248.3,161.0 Z M 255.7,195.1 L 253.3,202.1 L 252.6,204.4 L 233.6,200.1 L 245.7,175.9 L 255.7,195.1 Z M 254.1,149.2 L 270.0,161.7 L 278.2,171.8 L 255.7,195.1 L 245.7,175.9 L 248.3,161.0 L 254.1,149.2 Z M 221.4,198.6 L 233.6,200.1 L 252.6,204.4 L 235.2,238.0 L 228.4,223.2 L 222.7,215.2 L 221.4,198.6 Z M 241.9,127.0 L 270.1,118.0 L 272.1,142.3 L 270.0,161.7 L 254.1,149.2 L 241.9,127.0 Z M 237.7,88.0 L 250.6,93.7 L 270.1,118.0 L 241.9,127.0 L 237.7,88.0 Z M 76.9,123.0 L 109.3,130.4 L 155.5,145.3 L 149.9,188.8 L 128.7,224.2 L 53.7,221.1 L 32.3,172.0 L 61.8,169.4 L 76.9,123.0 Z M 53.7,221.1 L 128.7,224.2 L 151.6,264.2 L 86.8,292.7 L 94.0,342.2 L 49.8,357.4 L 34.8,337.4 L 30.0,261.2 L 53.7,221.1 Z M 196.6,286.2 L 190.6,293.3 L 186.8,314.8 L 141.1,361.1 L 94.0,342.2 L 86.8,292.7 L 151.6,264.2 L 196.6,286.2 Z M 135.5,45.5 L 163.5,35.2 L 154.2,82.3 L 190.8,108.4 L 173.2,202.5 L 149.9,188.8 L 155.5,145.3 L 109.3,130.4 L 135.5,45.5 Z M 190.8,108.4 L 219.4,111.6 L 229.4,150.8 L 216.9,198.3 L 202.4,229.8 L 173.2,202.5 L 190.8,108.4 Z M 219.4,111.6 L 237.7,88.0 L 241.9,127.0 L 254.1,149.2 L 248.3,161.0 L 229.4,150.8 L 219.4,111.6 Z M 206.8,233.6 L 217.5,228.2 L 228.4,223.2 L 235.2,238.0 L 241.2,261.2 L 238.8,279.0 L 215.8,259.0 L 206.8,233.6 Z M 149.9,188.8 L 173.2,202.5 L 202.4,229.8 L 206.8,233.6 L 215.8,259.0 L 196.6,286.2 L 151.6,264.2 L 128.7,224.2 L 149.9,188.8 Z" fill="#E9D5FF" stroke="#C4A8E8" stroke-width="1.2"/>
+        <text x="131" y="171" fill="#666" font-size="11" font-weight="600" text-anchor="middle" font-family="Noto Sans KR" pointer-events="none">광산구</text>
+
+        <!-- 지하철 1호선 -->
+        <polyline points="46,270 97,243 146,241 196,244 245,268 276,273 312,273 348,273 374,279 387,290 394,307 386,332 410,368"
+          fill="none" stroke="#22C55E" stroke-width="2.5" opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- 역사 장소 마커 (정보용) -->
+        <g class="map-pin"
+          data-name="전남도청" data-district="동구"
+          data-desc="1980년 5월 27일 새벽, 계엄군이 도청을 진압했습니다. 200여 명의 시민군이 끝까지 항전했습니다. 윤상원 등 마지막 수호자들이 이곳에서 쓰러졌습니다."
+          data-date="5월 18일 ~ 27일"
+          onmouseenter="showMapTooltip(event,this)" onmouseleave="hideMapTooltip()">
+          <circle cx="383" cy="284" r="13" fill="#C0392B" opacity="0.15"/>
+          <circle cx="383" cy="284" r="8" fill="#C0392B"/>
+          <circle cx="383" cy="284" r="3" fill="white" opacity="0.7"/>
+        </g>
+        <g class="map-pin"
+          data-name="전남대학교" data-district="북구"
+          data-desc="5월 18일 오전, 학생 시위의 출발점. 공수부대가 교문을 봉쇄하자 학생들이 저항하며 시위가 시내로 번졌습니다."
+          data-date="5월 18일"
+          onmouseenter="showMapTooltip(event,this)" onmouseleave="hideMapTooltip()">
+          <circle cx="368" cy="158" r="13" fill="#C0392B" opacity="0.15"/>
+          <circle cx="368" cy="158" r="8" fill="#C0392B"/>
+          <circle cx="368" cy="158" r="3" fill="white" opacity="0.7"/>
+        </g>
+        <g class="map-pin"
+          data-name="금남로" data-district="동구"
+          data-desc="수만 명의 시민이 집결한 5.18의 상징적 거리. 5월 20일 대규모 시위, 21일 계엄군 집단 발포가 이곳에서 일어났습니다."
+          data-date="5월 20일 ~ 21일"
+          onmouseenter="showMapTooltip(event,this)" onmouseleave="hideMapTooltip()">
+          <circle cx="372" cy="276" r="13" fill="#1C3F6E" opacity="0.15"/>
+          <circle cx="372" cy="276" r="8" fill="#1C3F6E"/>
+          <circle cx="372" cy="276" r="3" fill="white" opacity="0.7"/>
+        </g>
+        <g class="map-pin"
+          data-name="광주역" data-district="북구"
+          data-desc="시위대의 초기 집결지. 5월 19일부터 시민들이 몰려들었고, 공수부대의 폭력 진압에 맞서 저항이 이어졌습니다."
+          data-date="5월 19일"
+          onmouseenter="showMapTooltip(event,this)" onmouseleave="hideMapTooltip()">
+          <circle cx="362" cy="153" r="13" fill="#1C3F6E" opacity="0.15"/>
+          <circle cx="362" cy="153" r="8" fill="#1C3F6E"/>
+          <circle cx="362" cy="153" r="3" fill="white" opacity="0.7"/>
+        </g>
+        <g class="map-pin"
+          data-name="광주MBC" data-district="서구"
+          data-desc="편파 보도에 분노한 시민들이 방화했습니다. 당시 언론 통제의 상징적 사건이며, 진실을 감춘 방송에 대한 시민들의 분노를 보여줍니다."
+          data-date="5월 20일"
+          onmouseenter="showMapTooltip(event,this)" onmouseleave="hideMapTooltip()">
+          <circle cx="298" cy="262" r="13" fill="#1C3F6E" opacity="0.15"/>
+          <circle cx="298" cy="262" r="8" fill="#1C3F6E"/>
+          <circle cx="298" cy="262" r="3" fill="white" opacity="0.7"/>
+        </g>
+        <g class="map-pin"
+          data-name="양동시장" data-district="서구"
+          data-desc="시민들이 시위대에게 주먹밥과 음식을 나눠준 나눔의 현장입니다. 광주 시민 공동체의 연대와 자치를 보여주는 상징적인 장소입니다."
+          data-date="5월 22일 ~ 26일"
+          onmouseenter="showMapTooltip(event,this)" onmouseleave="hideMapTooltip()">
+          <circle cx="334" cy="267" r="13" fill="#1C3F6E" opacity="0.15"/>
+          <circle cx="334" cy="267" r="8" fill="#1C3F6E"/>
+          <circle cx="334" cy="267" r="3" fill="white" opacity="0.7"/>
+        </g>
+        <g class="map-pin"
+          data-name="망월동 묘역" data-district="북구"
+          data-desc="5.18 희생자들이 안장된 곳. 현재 국립5.18민주묘지로 지정되어 있으며, 매년 5월 18일 기념식이 열립니다."
+          data-date="현재"
+          onmouseenter="showMapTooltip(event,this)" onmouseleave="hideMapTooltip()">
+          <circle cx="313" cy="118" r="13" fill="#1C3F6E" opacity="0.15"/>
+          <circle cx="313" cy="118" r="8" fill="#1C3F6E"/>
+          <circle cx="313" cy="118" r="3" fill="white" opacity="0.7"/>
+        </g>
+        <g class="map-pin"
+          data-name="조선대학교" data-district="동구"
+          data-desc="시민군의 집결 및 무기 보관 장소로 활용되었습니다. 시민자치 기간 동안 시민군의 거점 역할을 했습니다."
+          data-date="5월 21일 ~ 27일"
+          onmouseenter="showMapTooltip(event,this)" onmouseleave="hideMapTooltip()">
+          <circle cx="395" cy="302" r="13" fill="#1C3F6E" opacity="0.15"/>
+          <circle cx="395" cy="302" r="8" fill="#1C3F6E"/>
+          <circle cx="395" cy="302" r="3" fill="white" opacity="0.7"/>
+        </g>
+      </svg>
+
+      <!-- 툴팁 -->
+      <div id="map-tooltip" class="absolute hidden rounded-2xl text-xs pointer-events-none" style="z-index:100; background:#fff; border:1px solid #E5E7EB; min-width:200px; max-width:240px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);">
+        <div class="p-4">
+          <div class="flex items-center justify-between mb-1.5">
+            <p id="tooltip-name" class="font-bold text-text-primary" style="font-size:13px;"></p>
+            <span id="tooltip-date" class="text-[10px] font-semibold px-2 py-0.5 rounded-full" style="background:#FEF3C7;color:#92400E;"></span>
+          </div>
+          <p id="tooltip-district" class="text-[10px] mb-2 font-semibold" style="color:#1C3F6E;"></p>
+          <p id="tooltip-desc" class="leading-relaxed text-text-secondary" style="font-size:10px;"></p>
+        </div>
+      </div>
+
+      <!-- 범례 -->
+      <div class="absolute bottom-4 left-4 bg-white rounded-xl p-3 text-xs shadow-card border border-border flex flex-col gap-1.5">
+        <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:#C0392B;"></div><span class="text-text-secondary">주요 항쟁 거점</span></div>
+        <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:#1C3F6E;"></div><span class="text-text-secondary">역사 장소</span></div>
+      </div>
+    </div>
+
+    <!-- 하단 버튼 -->
+    <div class="px-5 py-4 bg-white border-t border-border">
+      <button onclick="enterChatScreen()" class="btn-primary">체험 시작하기 →</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ④ 채팅 화면                                                   -->
+  <!-- ============================================================ -->
+  <div id="screen-chat" class="screen flex-col pt-14" style="background:#F4F6FA;">
+
+    <!-- 채팅 헤더 -->
+    <div class="flex items-center gap-3 px-4 py-3 bg-white border-b border-border flex-shrink-0" style="box-shadow: 0 1px 6px rgba(0,0,0,0.05);">
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-bold text-text-primary">1980년 5월, 광주</p>
+        <div class="flex items-center gap-2 mt-1">
+          <!-- 날짜 진행 바 (18일~27일, 10일) -->
+          <div class="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden" style="max-width:100px;">
+            <div id="date-progress-bar" class="h-full rounded-full bg-accent" style="width:0%;"></div>
+          </div>
+          <span id="chat-date-label" class="text-xs text-text-secondary">5월 18일</span>
+        </div>
+      </div>
+      <!-- 생존 확률 미터 -->
+      <div class="flex flex-col items-end gap-1 flex-shrink-0">
+        <div class="flex items-center gap-1">
+          <span class="text-xs font-semibold" style="color:#C0392B;">생존</span>
+          <span id="survival-pct" class="text-xs font-bold" style="color:#C0392B;">100%</span>
+        </div>
+        <div class="rounded-full overflow-hidden" style="width:60px; height:6px; background:#FEE2E2;">
+          <div id="survival-bar" class="h-full rounded-full" style="width:100%; background:#C0392B;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메시지 영역 -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto flex flex-col gap-3 px-4 py-4" style="scroll-behavior: smooth;"></div>
+
+    <!-- 타이핑 인디케이터 -->
+    <div id="typing-indicator" class="hidden px-4 pb-2">
+      <div class="flex items-center gap-1.5 px-4 py-3 rounded-2xl w-fit bg-white border border-border shadow-sm">
+        <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+      </div>
+    </div>
+
+    <!-- 입력창 -->
+    <div class="flex items-end gap-2 px-3 py-3 border-t border-border bg-white flex-shrink-0">
+      <textarea id="chat-input" rows="1" placeholder="행동하거나 말하세요…"
+        class="flex-1 rounded-2xl px-4 py-2.5 text-sm text-text-primary placeholder-gray-400 resize-none focus:outline-none transition-all"
+        style="max-height:120px; overflow-y:auto; background:#F4F6FA; border:1.5px solid #E5E7EB; font-family:'Noto Sans KR',sans-serif;"
+        onkeydown="handleChatKeydown(event)" oninput="autoResizeTextarea(this)"></textarea>
+      <button id="btn-send" onclick="handleSendMessage()"
+        class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-2xl transition-colors"
+        style="background:#1C3F6E;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ④ 엔딩 화면                                                   -->
+  <!-- ============================================================ -->
+  <div id="screen-ending" class="screen flex-col pt-14 overflow-y-auto" style="background:#F4F6FA;">
+    <div class="flex flex-col items-center gap-6 max-w-lg mx-auto w-full px-5 py-10">
+
+      <div class="text-center flex flex-col items-center gap-3">
+        <span id="ending-badge" class="ending-badge">Ending</span>
+        <h2 id="ending-title" class="text-2xl font-bold text-text-primary leading-tight" style="letter-spacing:-0.02em;"></h2>
+        <p id="ending-narrative" class="text-sm text-text-secondary leading-relaxed"></p>
+      </div>
+
+      <div id="epilogue-block" class="hidden w-full card p-5">
+        <p class="text-xs font-semibold text-primary mb-3">에필로그</p>
+        <p id="epilogue-text" class="text-sm text-text-primary leading-relaxed whitespace-pre-wrap"></p>
+      </div>
+
+      <div id="ending-unlocked-section" class="w-full">
+        <p class="text-xs text-text-secondary mb-2 font-medium">해금된 엔딩</p>
+        <div id="ending-unlocked-list" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <button onclick="handleRestart()" class="btn-secondary w-full max-w-xs" style="padding:15px; border-radius:14px;">
+        다시 시작하기
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- JAVASCRIPT                                                    -->
+  <!-- ============================================================ -->
+  <script>
+    const API_BASE = 'https://may-18th-democratic-uprising-hackathon-production.up.railway.app';
+
+    const state = {
+      sessionId: null,
+      profile: null,
+      gameDate: 18,
+      prevGameDate: 18,
+      ending: null,
+      survivalPct: 100,
+    };
+
+    const ENDINGS = {
+      '사망': {
+        id: 'ending_death',
+        badge: '사망',
+        title: '당신은 그 봄에 쓰러졌습니다',
+        narrative: '1980년 5월, 광주. 당신의 삶은 여기서 멈췄지만, 그 이름은 역사에 남았습니다.',
+        badgeStyle: 'background:#FEE2E2; color:#991B1B;',
+      },
+      '생존': {
+        id: 'ending_survival',
+        badge: '생존',
+        title: '당신은 살아남았습니다',
+        narrative: '5월 27일의 새벽이 지나갔습니다. 당신은 그 봄을 기억하는 사람이 되었습니다.',
+        badgeStyle: 'background:#D1FAE5; color:#065F46;',
+      },
+    };
+
+    const ENDING_LABELS = { ending_death: '사망', ending_survival: '생존' };
+
+    // 날짜별 역사 사건 카드 데이터
+    const HISTORY_EVENTS = {
+      18: { title: '5월 18일 일요일 — 공수부대 투입', text: '전남대 교문 앞에 공수부대가 배치됩니다. 학생들이 저항하고, 시위는 시내로 번지기 시작합니다.' },
+      19: { title: '5월 19일 월요일 — 시위 확산', text: '광주역과 금남로로 시위가 퍼집니다. 공수부대의 무차별 폭력에 시민들의 분노가 폭발합니다.' },
+      20: { title: '5월 20일 화요일 — 차량 시위대', text: '택시·버스 기사 200여 대가 차량 시위에 합류합니다. 광주MBC가 시민들에 의해 불탑니다.' },
+      21: { title: '5월 21일 수요일 — 집단 발포', text: '오후 1시, 계엄군이 금남로 시민들에게 집단 발포합니다. 수십 명이 쓰러지고, 시민들은 무기를 들기 시작합니다.' },
+      22: { title: '5월 22일 목요일 — 해방 광주', text: '계엄군이 외곽으로 물러납니다. 시민들이 도청을 중심으로 자치 질서를 유지합니다. 주먹밥을 나누는 손길이 이어집니다.' },
+      23: { title: '5월 23일 금요일 — 수습 협상', text: '시민수습위원회가 구성됩니다. 그러나 계엄군과의 협상은 진전이 없습니다. 광주는 고립되어 있습니다.' },
+      24: { title: '5월 24일 토요일 — 완전 포위', text: '광주는 완전히 포위됩니다. 외부 언론과 통신이 차단되고, 식량과 의약품이 부족해집니다.' },
+      25: { title: '5월 25일 일요일 — 결사항전 결의', text: '윤상원을 중심으로 결사항전을 결의한 시민군이 도청을 지킵니다. 많은 이들이 도청을 떠나지 않겠다고 합니다.' },
+      26: { title: '5월 26일 월요일 — 마지막 밤', text: '계엄군의 진압이 임박했습니다. 도청에 남은 이들은 마지막 밤을 보냅니다.' },
+      27: { title: '5월 27일 화요일 — 도청 최후 항전', text: '새벽 4시, 계엄군이 도청을 진압합니다. 윤상원을 비롯한 시민군이 끝까지 저항하다 쓰러집니다. 열흘간의 항쟁이 끝납니다.' },
+    };
+
+    function showScreen(name) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + name).classList.add('active');
+    }
+
+    function getUnlockedEndings() {
+      try { return JSON.parse(localStorage.getItem('unlocked_endings') || '[]'); } catch { return []; }
+    }
+    function unlockEnding(endingId) {
+      const list = getUnlockedEndings();
+      if (!list.includes(endingId)) { list.push(endingId); localStorage.setItem('unlocked_endings', JSON.stringify(list)); }
+    }
+    function renderUnlockedList(containerId) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = '';
+      getUnlockedEndings().forEach(id => {
+        const span = document.createElement('span');
+        span.className = 'text-xs px-3 py-1.5 rounded-full font-medium';
+        span.style.cssText = 'background:#EBF0F9; color:#1C3F6E;';
+        span.textContent = ENDING_LABELS[id] || id;
+        el.appendChild(span);
+      });
+    }
+    function initUnlockedEndings() {
+      const list = getUnlockedEndings();
+      if (list.length === 0) return;
+      document.getElementById('unlocked-section').classList.remove('hidden');
+      renderUnlockedList('unlocked-list');
+    }
+
+    async function handleProfileSubmit() {
+      const name = document.getElementById('input-name').value.trim();
+      const age  = parseInt(document.getElementById('input-age').value, 10);
+      const job  = document.getElementById('input-job').value.trim();
+      const background = document.getElementById('input-background').value.trim();
+      const errEl = document.getElementById('profile-error');
+
+      if (!name || !age || !job) {
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+
+      state.profile = { name, age, job, background };
+      localStorage.setItem('player_profile', JSON.stringify(state.profile));
+
+      const btn = document.getElementById('btn-enter');
+      btn.disabled = true; btn.textContent = '연결 중…';
+
+      try {
+        const res = await fetch(`${API_BASE}/sessions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ player_name: name, player_age: age, player_job: job + (background ? ` / ${background}` : '') }),
+        });
+        const json = await res.json();
+        if (json.status !== 'ok') throw new Error('세션 생성 실패');
+        state.sessionId = json.data.session_id ?? json.data.id;
+        state.gameDate = 18;
+        showScreen('map');
+      } catch (e) {
+        errEl.textContent = '서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인하세요.';
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false; btn.textContent = '1980년 5월로 들어가기';
+      }
+    }
+
+    function updateSurvivalMeter(pct) {
+      state.survivalPct = Math.max(5, Math.min(100, pct));
+      const bar = document.getElementById('survival-bar');
+      const pctEl = document.getElementById('survival-pct');
+      bar.style.width = state.survivalPct + '%';
+      pctEl.textContent = state.survivalPct + '%';
+      // 30% 이하 시 위험 애니메이션 + 색상 변화
+      const danger = state.survivalPct <= 30;
+      bar.style.background = danger ? '#7f1d1d' : '#C0392B';
+      pctEl.style.color = danger ? '#7f1d1d' : '#C0392B';
+      bar.classList.toggle('survival-danger', danger);
+    }
+
+    function showHistoryCard(date) {
+      const ev = HISTORY_EVENTS[date];
+      if (!ev) return;
+      const messages = document.getElementById('chat-messages');
+      const card = document.createElement('div');
+      card.className = 'history-card';
+      card.innerHTML = `<div style="font-weight:700; font-size:0.8rem; margin-bottom:5px; opacity:0.85;">📖 ${escapeHtml(ev.title)}</div><div style="opacity:0.9;">${escapeHtml(ev.text)}</div>`;
+      messages.appendChild(card);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function enterChatScreen() {
+      document.getElementById('chat-messages').innerHTML = '';
+      state.survivalPct = 100;
+      state.prevGameDate = 18;
+      updateDateDisplay();
+      updateSurvivalMeter(100);
+      showHistoryCard(18);
+      addMessage('system', `${state.profile.name}(${state.profile.job}) — 1980년 5월 18일 일요일, 광주`);
+      showScreen('chat');
+      // 자동으로 첫 장면 시작 — 플레이어가 바로 이야기 속에 던져지도록
+      setTimeout(() => sendAutoStart(), 300);
+    }
+
+    async function sendAutoStart() {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_BASE}/sessions/${state.sessionId}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: '시작', location: '', character: '' }),
+        });
+        const json = await res.json();
+        if (!res.ok || json.status !== 'ok') throw new Error(json.detail || '오류');
+        const data = json.data;
+        const answer = data.assistant_message?.content ?? data.answer ?? '';
+        const dangerDelta = data.danger_delta ?? 0;
+        if (data.game_date && data.game_date !== state.prevGameDate) {
+          state.prevGameDate = data.game_date;
+          showHistoryCard(data.game_date);
+        }
+        if (data.game_date) { state.gameDate = data.game_date; updateDateDisplay(); }
+        addMessage('assistant', answer);
+        updateSurvivalMeter(state.survivalPct + dangerDelta);
+      } catch (_) {
+        addMessage('system', '이야기를 불러오는 중 오류가 발생했습니다. 직접 입력해 시작하세요.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function updateDateDisplay() {
+      const date = state.gameDate;
+      document.getElementById('status-date').textContent = `1980년 5월 ${date}일`;
+      document.getElementById('chat-date-label').textContent = `5월 ${date}일`;
+      // 18일~27일 → 0%~100%
+      const pct = Math.min(((date - 18) / 9) * 100, 100);
+      document.getElementById('date-progress-bar').style.width = pct + '%';
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function renderAssistantMessage(content) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex flex-col gap-3 w-full';
+
+      // 날짜 헤더 (📅 1980년 5월 OO일 ...)
+      const dateMatch = content.match(/📅[^\n]*/);
+      if (dateMatch) {
+        const dateEl = document.createElement('div');
+        dateEl.className = 'self-center text-xs font-semibold px-4 py-1.5 rounded-full';
+        dateEl.style.cssText = 'background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;';
+        dateEl.textContent = dateMatch[0];
+        wrapper.appendChild(dateEl);
+      }
+
+      // **[이름]**: ... 또는 **[이름]**\n... 섹션 파싱 (콜론 유무 모두 처리)
+      const sectionRe = /\*\*\[([^\]]+)\]\*\*\s*:?\s*\n?([\s\S]*?)(?=\n?\s*\*\*\[|$)/g;
+      let match;
+      let found = false;
+      const playerName = state.profile?.name || '주인공';
+
+      while ((match = sectionRe.exec(content)) !== null) {
+        found = true;
+        const name = match[1].trim();
+        const text = match[2].trim()
+          .replace(/\*\*([^*]+)\*\*/g, '$1')
+          .replace(/\n/g, '<br>');
+        if (!text) continue;
+
+        if (name === '나레이터') {
+          // ── 나레이터 블록: 전체 너비, 배경 구분 ──
+          const block = document.createElement('div');
+          block.style.cssText = 'background:#F3F4F6; border-left:3px solid #9CA3AF; border-radius:0 8px 8px 0; padding:10px 14px;';
+          const label = document.createElement('div');
+          label.className = 'text-xs font-bold mb-1.5 flex items-center gap-1.5';
+          label.style.color = '#6B7280';
+          label.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#9CA3AF;display:inline-block;"></span>나레이터';
+          const p = document.createElement('p');
+          p.className = 'text-sm leading-relaxed italic';
+          p.style.color = '#374151';
+          p.innerHTML = text;
+          block.appendChild(label);
+          block.appendChild(p);
+          wrapper.appendChild(block);
+
+        } else if (name === '주인공') {
+          // ── 주인공(플레이어): 오른쪽 정렬, 실제 이름 표시 ──
+          const block = document.createElement('div');
+          block.className = 'flex flex-col gap-1 items-end';
+          const label = document.createElement('span');
+          label.className = 'text-xs font-bold px-1';
+          label.style.color = '#4B5563';
+          label.textContent = playerName;
+          const bubble = document.createElement('div');
+          bubble.style.cssText = 'background:#1C3F6E; color:#fff; border-radius:20px 20px 4px 20px; max-width:80%; padding:11px 16px; font-size:0.88rem; line-height:1.6;';
+          bubble.innerHTML = text;
+          block.appendChild(label);
+          block.appendChild(bubble);
+          wrapper.appendChild(block);
+
+        } else {
+          // ── 역사 인물: 이름 태그 + 말풍선 ──
+          const block = document.createElement('div');
+          block.className = 'flex flex-col gap-1';
+          const label = document.createElement('div');
+          label.className = 'flex items-center gap-1.5';
+          label.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:#C0392B;display:inline-block;flex-shrink:0;"></span><span class="text-xs font-bold" style="color:#C0392B;">${escapeHtml(name)}</span>`;
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble-assistant';
+          bubble.style.cssText = 'border-left:3px solid #C0392B; max-width:85%;';
+          bubble.innerHTML = text;
+          block.appendChild(label);
+          block.appendChild(bubble);
+          wrapper.appendChild(block);
+        }
+      }
+
+      if (!found) {
+        const fallback = document.createElement('div');
+        fallback.className = 'bubble-assistant';
+        fallback.innerHTML = escapeHtml(content).replace(/\n/g, '<br>');
+        wrapper.appendChild(fallback);
+      }
+
+      return wrapper;
+    }
+
+    function addMessage(role, content) {
+      const messages = document.getElementById('chat-messages');
+      let el;
+      if (role === 'user') {
+        el = document.createElement('div');
+        el.className = 'bubble-user';
+        el.textContent = content;
+      } else if (role === 'assistant') {
+        el = renderAssistantMessage(content);
+      } else {
+        el = document.createElement('div');
+        el.className = 'bubble-system';
+        el.textContent = content;
+      }
+      messages.appendChild(el);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function handleSendMessage() {
+      const input = document.getElementById('chat-input');
+      const msg = input.value.trim();
+      if (!msg || input.disabled) return;
+      addMessage('user', msg);
+      input.value = ''; autoResizeTextarea(input); setLoading(true);
+
+      try {
+        const res = await fetch(`${API_BASE}/sessions/${state.sessionId}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg, location: '', character: '' }),
+        });
+        const json = await res.json();
+        if (!res.ok || json.status !== 'ok') throw new Error(json.detail || '채팅 오류');
+        const data = json.data;
+        const answer = data.assistant_message?.content ?? data.answer ?? '';
+        const ending = data.ending ?? null;
+        const epilogue = data.epilogue ?? null;
+        const dangerDelta = data.danger_delta ?? 0;
+
+        // 날짜 변경 감지 → 역사 카드 삽입
+        if (data.game_date && data.game_date !== state.prevGameDate) {
+          state.prevGameDate = data.game_date;
+          showHistoryCard(data.game_date);
+        }
+        if (data.game_date) { state.gameDate = data.game_date; updateDateDisplay(); }
+
+        addMessage('assistant', answer);
+
+        // 생존 확률 미터 업데이트
+        updateSurvivalMeter(state.survivalPct + dangerDelta);
+
+        if (ending) showEnding(ending, epilogue || '');
+      } catch (e) {
+        addMessage('system', '오류가 발생했습니다. 다시 시도해주세요.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function showMapTooltip(event, el) {
+      const tooltip = document.getElementById('map-tooltip');
+      const ds = el.dataset;
+      document.getElementById('tooltip-name').textContent = ds.name || '';
+      document.getElementById('tooltip-district').textContent = ds.district || '';
+      document.getElementById('tooltip-desc').textContent = ds.desc || '';
+      document.getElementById('tooltip-date').textContent = ds.date || '';
+      tooltip.classList.remove('hidden');
+      const mapRect = document.getElementById('gwangju-map').parentElement.getBoundingClientRect();
+      let x = event.clientX - mapRect.left + 14;
+      let y = event.clientY - mapRect.top + 14;
+      if (x + 250 > mapRect.width) x = event.clientX - mapRect.left - 250;
+      if (y + 160 > mapRect.height) y = event.clientY - mapRect.top - 160;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    }
+    function hideMapTooltip() { document.getElementById('map-tooltip').classList.add('hidden'); }
+
+    function handleChatKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }
+    function autoResizeTextarea(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+    function setLoading(loading) {
+      document.getElementById('chat-input').disabled = loading;
+      document.getElementById('btn-send').disabled = loading;
+      document.getElementById('btn-send').style.opacity = loading ? '0.5' : '1';
+      document.getElementById('typing-indicator').classList.toggle('hidden', !loading);
+    }
+
+    function showEnding(endingKey, epilogue) {
+      const meta = ENDINGS[endingKey];
+      if (!meta) return;
+      state.ending = meta.id;
+      unlockEnding(meta.id);
+
+      const badge = document.getElementById('ending-badge');
+      badge.textContent = meta.badge;
+      badge.style.cssText = meta.badgeStyle;
+      document.getElementById('ending-title').textContent = meta.title;
+      document.getElementById('ending-narrative').textContent = meta.narrative;
+
+      const epBlock = document.getElementById('epilogue-block');
+      if (epilogue) {
+        epBlock.classList.remove('hidden');
+        document.getElementById('epilogue-text').textContent = epilogue;
+      } else {
+        epBlock.classList.add('hidden');
+      }
+
+      renderUnlockedList('ending-unlocked-list');
+      showScreen('ending');
+    }
+
+    async function handleRestart() {
+      if (state.sessionId) {
+        try { await fetch(`${API_BASE}/sessions/${state.sessionId}`, { method: 'DELETE' }); } catch (_) {}
+      }
+      state.sessionId = null;
+      state.profile = null;
+      state.gameDate = 18;
+      state.prevGameDate = 18;
+      state.ending = null;
+      state.survivalPct = 100;
+      document.getElementById('epilogue-block').classList.add('hidden');
+      initUnlockedEndings();
+      showScreen('intro');
+      updateDateDisplay();
+    }
+
+    (function init() {
+      try {
+        const saved = localStorage.getItem('player_profile');
+        if (saved) {
+          const p = JSON.parse(saved);
+          document.getElementById('input-name').value = p.name || '';
+          document.getElementById('input-age').value  = p.age  || '';
+          document.getElementById('input-job').value  = p.job  || '';
+          document.getElementById('input-background').value = p.background || '';
+        }
+      } catch (_) {}
+      initUnlockedEndings();
+    })();
+  </script>
+</body>
+</html>
