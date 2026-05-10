@@ -12,6 +12,9 @@ wheels/
 # Environment variables
 .env
 
+# SQLite DB 파일
+*.sqlite
+
 # Vector store (generated) — git에 포함 (배포 필수, 2.4MB)
 # vectorstore/
 
