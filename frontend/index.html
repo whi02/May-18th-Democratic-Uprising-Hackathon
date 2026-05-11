@@ -185,6 +185,38 @@
     .map-pin { cursor: default; transition: opacity 0.15s; }
     .map-pin:hover { opacity: 0.85; }
     #map-tooltip { pointer-events: none; transition: opacity 0.12s; }
+
+    /* 엔딩 화면 */
+    #screen-ending { background: #F4F6FA; }
+    #ending-hero { transition: background 0.5s; }
+
+    /* 에필로그 마크다운 렌더링 */
+    .epilogue-prose h1, .epilogue-prose h2, .epilogue-prose h3 {
+      font-weight: 700;
+      color: #111827;
+      margin: 1.1em 0 0.4em;
+      line-height: 1.4;
+    }
+    .epilogue-prose h1 { font-size: 1.2rem; }
+    .epilogue-prose h2 { font-size: 1.05rem; }
+    .epilogue-prose h3 { font-size: 0.95rem; color: #374151; }
+    .epilogue-prose strong { font-weight: 700; color: #111827; }
+    .epilogue-prose em { font-style: italic; color: #4B5563; }
+    .epilogue-prose p { margin: 0.6em 0; }
+    .epilogue-prose p:first-child { margin-top: 0; }
+    .epilogue-prose p:last-child { margin-bottom: 0; }
+    .epilogue-prose hr { border: none; border-top: 1px solid #E5E7EB; margin: 1em 0; }
+    .epilogue-prose ul, .epilogue-prose ol { padding-left: 1.4em; margin: 0.5em 0; }
+    .epilogue-prose li { margin: 0.25em 0; }
+    .epilogue-prose blockquote {
+      border-left: 3px solid #1C3F6E;
+      padding: 0.5em 1em;
+      background: #EBF0F9;
+      border-radius: 0 8px 8px 0;
+      color: #1C3F6E;
+      font-style: italic;
+      margin: 0.8em 0;
+    }
   </style>
 </head>
 <body>
@@ -463,20 +495,30 @@
   <!-- ============================================================ -->
   <!-- ④ 엔딩 화면                                                   -->
   <!-- ============================================================ -->
-  <div id="screen-ending" class="screen flex-col pt-14 overflow-y-auto" style="background:#F4F6FA;">
-    <div class="flex flex-col items-center gap-6 max-w-lg mx-auto w-full px-5 py-10">
+  <div id="screen-ending" class="screen flex-col overflow-y-auto" id="screen-ending">
+    <!-- 히어로 배경 영역 -->
+    <div id="ending-hero" class="w-full flex flex-col items-center justify-center gap-5 px-6 py-16 text-center" style="min-height:42vh; position:relative;">
+      <div id="ending-hero-overlay" style="position:absolute;inset:0;z-index:0;"></div>
+      <div style="position:relative;z-index:1;" class="flex flex-col items-center gap-4">
+        <span id="ending-badge" class="ending-badge text-sm px-5 py-1.5 font-bold tracking-widest uppercase">Ending</span>
+        <h2 id="ending-title" class="text-3xl font-bold leading-tight" style="letter-spacing:-0.03em; text-shadow:0 2px 12px rgba(0,0,0,0.18);"></h2>
+        <p id="ending-narrative" class="text-sm leading-relaxed max-w-xs" style="opacity:0.85;"></p>
+      </div>
+    </div>
 
-      <div class="text-center flex flex-col items-center gap-3">
-        <span id="ending-badge" class="ending-badge">Ending</span>
-        <h2 id="ending-title" class="text-2xl font-bold text-text-primary leading-tight" style="letter-spacing:-0.02em;"></h2>
-        <p id="ending-narrative" class="text-sm text-text-secondary leading-relaxed"></p>
+    <!-- 본문 카드 영역 -->
+    <div class="flex flex-col items-center gap-5 max-w-lg mx-auto w-full px-5 py-8">
+
+      <!-- 에필로그 -->
+      <div id="epilogue-block" class="hidden w-full rounded-2xl overflow-hidden" style="border:1px solid #E5E7EB; box-shadow:0 4px 24px rgba(0,0,0,0.07);">
+        <div class="flex items-center gap-2 px-5 py-3" style="background:#1C3F6E;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span class="text-xs font-bold text-white tracking-widest uppercase">에필로그</span>
+        </div>
+        <div id="epilogue-text" class="epilogue-prose px-5 py-5 text-sm leading-loose" style="background:#fff; color:#1f2937;"></div>
       </div>
 
-      <div id="epilogue-block" class="hidden w-full card p-5">
-        <p class="text-xs font-semibold text-primary mb-3">에필로그</p>
-        <p id="epilogue-text" class="text-sm text-text-primary leading-relaxed whitespace-pre-wrap"></p>
-      </div>
-
+      <!-- 해금된 엔딩 -->
       <div id="ending-unlocked-section" class="w-full">
         <p class="text-xs text-text-secondary mb-2 font-medium">해금된 엔딩</p>
         <div id="ending-unlocked-list" class="flex flex-wrap gap-2"></div>
@@ -853,22 +895,93 @@
       document.getElementById('typing-indicator').classList.toggle('hidden', !loading);
     }
 
+    function parseMarkdown(text) {
+      // 줄 단위 파싱 (헤더, 인용, 구분선, 리스트)
+      const lines = text.split('\n');
+      const html = [];
+      let inList = false;
+      let listTag = '';
+
+      const flushList = () => {
+        if (inList) { html.push(`</${listTag}>`); inList = false; listTag = ''; }
+      };
+
+      const inlineFormat = (s) =>
+        s
+          .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.+?)\*/g, '<em>$1</em>')
+          .replace(/_(.+?)_/g, '<em>$1</em>');
+
+      for (const raw of lines) {
+        const line = raw.trimEnd();
+        if (/^### /.test(line)) {
+          flushList();
+          html.push(`<h3>${inlineFormat(line.slice(4))}</h3>`);
+        } else if (/^## /.test(line)) {
+          flushList();
+          html.push(`<h2>${inlineFormat(line.slice(3))}</h2>`);
+        } else if (/^# /.test(line)) {
+          flushList();
+          html.push(`<h1>${inlineFormat(line.slice(2))}</h1>`);
+        } else if (/^> /.test(line)) {
+          flushList();
+          html.push(`<blockquote>${inlineFormat(line.slice(2))}</blockquote>`);
+        } else if (/^---$/.test(line.trim())) {
+          flushList();
+          html.push('<hr>');
+        } else if (/^[-*] /.test(line)) {
+          if (!inList || listTag !== 'ul') { if (inList) html.push(`</${listTag}>`); html.push('<ul>'); inList = true; listTag = 'ul'; }
+          html.push(`<li>${inlineFormat(line.slice(2))}</li>`);
+        } else if (/^\d+\. /.test(line)) {
+          if (!inList || listTag !== 'ol') { if (inList) html.push(`</${listTag}>`); html.push('<ol>'); inList = true; listTag = 'ol'; }
+          html.push(`<li>${inlineFormat(line.replace(/^\d+\. /, ''))}</li>`);
+        } else if (line.trim() === '') {
+          flushList();
+          html.push('');
+        } else {
+          flushList();
+          html.push(`<p>${inlineFormat(line)}</p>`);
+        }
+      }
+      flushList();
+      return html.join('\n');
+    }
+
     function showEnding(endingKey, epilogue) {
       const meta = ENDINGS[endingKey];
       if (!meta) return;
       state.ending = meta.id;
       unlockEnding(meta.id);
 
+      const isDeath = endingKey === '사망';
+
+      // 히어로 영역 스타일
+      const hero = document.getElementById('ending-hero');
+      const overlay = document.getElementById('ending-hero-overlay');
+      if (isDeath) {
+        hero.style.background = 'linear-gradient(160deg, #1a0a0a 0%, #3b0000 50%, #1C1C1C 100%)';
+        overlay.style.background = 'radial-gradient(ellipse at 50% 80%, rgba(192,57,43,0.18) 0%, transparent 70%)';
+        hero.style.color = '#fff';
+      } else {
+        hero.style.background = 'linear-gradient(160deg, #0f2540 0%, #1C3F6E 50%, #1a4a2e 100%)';
+        overlay.style.background = 'radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.15) 0%, transparent 70%)';
+        hero.style.color = '#fff';
+      }
+
       const badge = document.getElementById('ending-badge');
       badge.textContent = meta.badge;
-      badge.style.cssText = meta.badgeStyle;
+      badge.style.cssText = isDeath
+        ? 'background:rgba(254,226,226,0.15); color:#FCA5A5; border:1px solid rgba(252,165,165,0.3);'
+        : 'background:rgba(209,250,229,0.15); color:#6EE7B7; border:1px solid rgba(110,231,183,0.3);';
+
       document.getElementById('ending-title').textContent = meta.title;
       document.getElementById('ending-narrative').textContent = meta.narrative;
 
       const epBlock = document.getElementById('epilogue-block');
       if (epilogue) {
         epBlock.classList.remove('hidden');
-        document.getElementById('epilogue-text').textContent = epilogue;
+        document.getElementById('epilogue-text').innerHTML = parseMarkdown(epilogue);
       } else {
         epBlock.classList.add('hidden');
       }
