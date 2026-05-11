@@ -190,6 +190,36 @@ payload = f"[{header}]\n{char_note}{user_message}"
 
 ---
 
+---
+
+### BUG-05: Gemini 무료 API 쿼터 초과로 채팅 오류 (2026-05-11, 해결 중)
+
+**증상:** 2~3번 대화 후 "오류가 발생했습니다. 다시 시도해주세요." 표시. 백엔드 500 응답.
+
+**원인:** `gemini-2.5-flash-lite` 무료 티어 일일 쿼터가 **20 RPD (requests per day)** 로 극히 낮음.  
+채팅 1회당 LLM 호출이 2번 발생 (condense 쿼리 + 최종 답변) → 실질적으로 하루 **10번 대화**가 한계.
+
+**실제 에러 메시지:**
+```
+429 RESOURCE_EXHAUSTED
+quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier
+quotaValue: 20
+model: gemini-2.5-flash-lite
+```
+
+**추가 발견:** Railway 배포 서버와 로컬 개발이 동일한 `GOOGLE_API_KEY`를 공유해 쿼터 소진 가속화.  
+`gemini-2.0-flash-lite`로 교체 후에도 당일 쿼터 소진 확인 → 개발/배포 API 키 분리 필요.
+
+**조치:**
+1. `config.py` `LLM_MODEL` → `"google_genai/gemini-2.0-flash-lite"` 변경 (1500 RPD, 75배 여유)
+2. `chain_service.py` 에필로그 LLM → `"gemini-2.0-flash-lite"` 변경
+
+**수정 파일:** `config.py`, `backend/services/chain_service.py`
+
+**잔여 과제:** 쿼터 재시도 로직 미구현 (`config.py`의 `LLM_MAX_RETRIES` 값이 실제 chain에 적용되지 않음), 개발/배포 API 키 분리 권고.
+
+---
+
 ## 현재 알려진 잠재적 이슈
 
 | 번호 | 위치 | 내용 | 심각도 |
@@ -199,6 +229,8 @@ payload = f"[{header}]\n{char_note}{user_message}"
 | 3 | 백엔드 | ~~MySQL 연결 필요 — 배포 환경에서 MySQL 없으면 SQLite 전환 필요~~ **해결 (2026-05-11)**: SQLite로 전환 완료 | 해결됨 |
 | 4 | `ingest.py` | Gemini Embedding API rate limit으로 배치 사이 15초 대기 — 전체 소요 약 30~60분 | 최초 1회만 |
 | 5 | 프론트 | `handleRestart()` 시 `showScreen('intro')` 전 `state.gameDate = 18` 리셋하지만 `updateDateDisplay()` 호출 위치가 restart 이후여서 채팅 재진입 전까지는 날짜바가 리셋되지 않음 | 매우 낮음 |
+| 6 | `config.py` | `LLM_MAX_RETRIES`, `LLM_RETRY_BACKOFF_SECONDS` 값이 정의되어 있지만 `chain.py`의 `init_chat_model()` 호출에 실제로 전달되지 않음 — 429 발생 시 자동 재시도 없음 | 중간 |
+| 7 | 전체 | Railway 배포와 로컬 개발이 동일 `GOOGLE_API_KEY` 공유 — 일일 쿼터 소진 가속화. 개발용/배포용 API 키 분리 권고 | 중간 |
 
 ---
 
@@ -246,6 +278,18 @@ payload = f"[{header}]\n{char_note}{user_message}"
 **수정 사항:**
 - `frontend/index.html`의 `API_BASE` → Railway URL로 변경
 - `index.html`을 루트에 복사 (GitHub Pages는 root 또는 /docs만 지원)
+
+### FEAT-03: 엔딩 화면 마크다운 렌더링 + UI 개선 (2026-05-11)
+
+**문제:** 에필로그 텍스트를 `.textContent`로 렌더링해 `#`, `*` 등 마크다운 기호가 그대로 노출됨.
+
+**해결:**
+- `parseMarkdown()` 함수 추가 (`h1~h3`, `strong`, `em`, `blockquote`, `ul/ol`, `hr`, `p` 지원)
+- 에필로그 영역을 `innerHTML` + `.epilogue-prose` CSS 클래스로 렌더링 교체
+- 엔딩 화면 히어로 영역 리디자인: 사망/생존별 그라디언트 배경, 배지 스타일 분기
+- 에필로그 헤더 바(책 아이콘 + 진청색 배경) 추가
+
+**수정 파일:** `frontend/index.html`
 
 ---
 
